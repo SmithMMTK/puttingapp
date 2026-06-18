@@ -18,9 +18,13 @@ export class Renderer {
   }
 
   _resize() {
-    const W = Math.min(this.canvas.parentElement.clientWidth, 400);
-    this.canvas.width  = W;
-    this.canvas.height = Math.round(W * 1.15);
+    const el = this.canvas.parentElement;
+    const W  = el.clientWidth;
+    const H  = el.clientHeight;
+    if (W > 0 && H > 0) {
+      this.canvas.width  = W;
+      this.canvas.height = H;
+    }
   }
 
   /**

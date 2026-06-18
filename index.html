@@ -27,7 +27,7 @@
     <section class="controls">
 
       <!-- Break direction -->
-      <div class="control-row">
+      <div class="control-row full-width">
         <span class="ctrl-label">Break</span>
         <div class="break-btns">
           <button id="btn-left"     class="break-btn">◀ Left</button>
@@ -42,7 +42,6 @@
           Slope <span id="break-val" class="val">2.0%</span>
         </label>
         <input type="range" id="break-mag" min="0" max="7" step="0.5" value="2" />
-        <div class="range-labels"><span>0%</span><span>7%</span></div>
       </div>
 
       <!-- Distance -->
@@ -51,7 +50,6 @@
           Distance <span id="distance-val" class="val">12 ft</span>
         </label>
         <input type="range" id="distance" min="1" max="30" step="1" value="12" />
-        <div class="range-labels"><span>1 ft</span><span>30 ft</span></div>
       </div>
 
       <!-- Green speed -->
@@ -60,7 +58,6 @@
           Stimp <span id="stimp-val" class="val">8.0</span>
         </label>
         <input type="range" id="stimp" min="8" max="12" step="0.5" value="8" />
-        <div class="range-labels"><span>8 (slow)</span><span>12 (fast)</span></div>
       </div>
 
       <!-- Putt firmness: how far past hole -->
@@ -69,7 +66,6 @@
           Firmness <span id="past-val" class="val">1.5 ft</span>
         </label>
         <input type="range" id="past-feet" min="1" max="5" step="0.5" value="1.5" />
-        <div class="range-labels"><span>1 ft (die at hole)</span><span>5 ft (firm)</span></div>
       </div>
 
     </section>

@@ -193,6 +193,11 @@ export function initUI() {
       .forEach(el => { el.disabled = !isSetup; });
   }
 
+  // ── Redraw on resize (orientation change, etc.) ──────────────────────
+  window.addEventListener('resize', () => {
+    if (state.phase === 'SETUP') redrawSetup();
+  });
+
   // ── Init ───────────────────────────────────────────────────────────────
   distSlider.value  = state.distanceFt;
   stimpSlider.value = state.stimp;
