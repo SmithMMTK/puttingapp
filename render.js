@@ -230,6 +230,10 @@ export class Renderer {
 
     const frame = (now) => {
       if (gen !== this._animGen) return; // cancelled — drop silently
+      // Resync geometry if canvas was resized since last frame
+      if (this.canvas.width !== this._W || this.canvas.height !== this._H) {
+        this._setupGeometry(holeDistM, path);
+      }
       if (!t0) t0 = now;
       const simT = ((now - t0) / 1000) * tScale;
       let idx = path.findIndex(p => p.t >= simT);

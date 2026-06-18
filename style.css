@@ -47,13 +47,61 @@ body {
 }
 
 /* ── Header ── */
+header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
 header h1 {
-  text-align: center;
+  text-align: left;
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   padding: 0.1rem 0;
+  flex-shrink: 0;
 }
+
+/* ── Mode toggle ── */
+.mode-toggle { display: flex; gap: 5px; }
+.mode-btn {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--green-dark);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mode-btn.active {
+  background: var(--green-mid);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.mode-btn:hover:not(.active) { background: #1e4a2a; color: var(--text); }
+
+/* ── Game HUD ── */
+.game-hud {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-height: 28px;
+  font-variant-numeric: tabular-nums;
+}
+#game-round-label { color: var(--muted); }
+#game-score-label { color: var(--accent); }
 
 /* ── Main — fills remaining height ── */
 main {
@@ -229,6 +277,22 @@ input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
   transition: background 0.15s;
 }
 .btn-retry:hover { background: rgba(74,222,128,0.08); }
+
+.btn-next {
+  flex: 1;
+  padding: 11px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gold);
+  background: transparent;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.btn-next:hover { background: rgba(255,215,0,0.08); }
 
 .btn-random {
   flex-shrink: 0;

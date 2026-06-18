@@ -24,8 +24,14 @@ export function initUI() {
   const puttBtn     = document.getElementById('btn-putt');
   const retryBtn    = document.getElementById('btn-retry');
   const randomBtn   = document.getElementById('btn-random');
+  const nextBtn     = document.getElementById('btn-next');
   const aimDisplay  = document.getElementById('aim-display');
   const resultLegend = document.getElementById('result-legend');
+  const gameHud        = document.getElementById('game-hud');
+  const gameRoundLabel = document.getElementById('game-round-label');
+  const gameScoreLabel = document.getElementById('game-score-label');
+  const modePracticeBtn = document.getElementById('btn-mode-practice');
+  const modeGameBtn     = document.getElementById('btn-mode-game');
 
   // ── State ──────────────────────────────────────────────────────────────
   const state = {
@@ -37,9 +43,13 @@ export function initUI() {
     aimOffsetM:   0,    // user's lateral aim offset (metres at hole level; −=left)
     phase:       'SETUP', // SETUP | ROLLING | RESULT
     correctAimM:  null,
+    mode:        'practice', // 'practice' | 'game'
   };
 
+  const gameState = { round: 0, score: 0, total: 10 };
+
   let tracking = false; // canvas drag in progress
+  let lastResult = null; // stored for resize-redraw during RESULT phase
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function slopePerp() { return state.breakDir * state.breakMag; }
@@ -61,6 +71,60 @@ export function initUI() {
     renderer.drawSetup(holeDistM(), state.aimOffsetM, slopePerp());
     aimDisplay.textContent = aimLabel();
   }
+
+  // ── Game helpers ──────────────────────────────────────────────────────
+  function gameRating(score, total) {
+    const pct = score / total;
+    if (pct === 1)   return 'Perfect! 🏆';
+    if (pct >= 0.8)  return 'Excellent! 🌟';
+    if (pct >= 0.6)  return 'Good round 👍';
+    if (pct >= 0.4)  return 'Not bad 🤔';
+    if (pct >= 0.2)  return 'Keep practicing 💪';
+    return 'Try again! 😅';
+  }
+
+  function updateGameHUD() {
+    if (gameState.round > gameState.total) {
+      gameRoundLabel.textContent = 'Game Over!';
+      gameScoreLabel.textContent = `⛳ ${gameState.score}/${gameState.total} — ${gameRating(gameState.score, gameState.total)}`;
+    } else {
+      gameRoundLabel.textContent = `Putt ${gameState.round} / ${gameState.total}`;
+      gameScoreLabel.textContent = `⛳ ${gameState.score} made`;
+    }
+  }
+
+  function startGame() {
+    gameState.round = 1;
+    gameState.score = 0;
+    state.phase = 'SETUP';
+    renderer.stopAnimation();
+    lastResult = null;
+    randomiseParams();
+    updateGameHUD();
+    setPhaseUI();
+    redrawSetup();
+  }
+
+  // ── Mode toggle ────────────────────────────────────────────────────────
+  modePracticeBtn.addEventListener('click', () => {
+    if (state.mode === 'practice') return;
+    renderer.stopAnimation();
+    state.mode = 'practice';
+    state.phase = 'SETUP';
+    lastResult = null;
+    modePracticeBtn.classList.add('active');
+    modeGameBtn.classList.remove('active');
+    setPhaseUI();
+    redrawSetup();
+  });
+
+  modeGameBtn.addEventListener('click', () => {
+    if (state.mode === 'game') return;
+    state.mode = 'game';
+    modePracticeBtn.classList.remove('active');
+    modeGameBtn.classList.add('active');
+    startGame();
+  });
 
   // ── Break direction buttons ────────────────────────────────────────────
   function syncBreakBtns() {
@@ -164,9 +228,16 @@ export function initUI() {
 
     renderer.animate(result.path, holeDistM(), result.holed, result.stopDist, () => {
       state.phase = 'RESULT';
+      if (state.mode === 'game' && result.holed) gameState.score++;
       setPhaseUI();
+      if (state.mode === 'game') updateGameHUD();
+      const hDist = holeDistM();
+      lastResult = {
+        path: result.path, hDist, holed: result.holed, stopDist: result.stopDist,
+        aimOffsetM: state.aimOffsetM, correctAimM: state.correctAimM,
+      };
       renderer.drawResult(
-        result.path, holeDistM(), result.holed, result.stopDist,
+        result.path, hDist, result.holed, result.stopDist,
         state.aimOffsetM, state.correctAimM
       );
     });
@@ -177,6 +248,22 @@ export function initUI() {
     state.phase = 'SETUP';
     setPhaseUI();
     redrawSetup();
+  });
+
+  // ── NEXT PUTT / PLAY AGAIN button (game mode) ─────────────────────────
+  nextBtn.addEventListener('click', () => {
+    if (gameState.round >= gameState.total) {
+      startGame(); // game over → start fresh
+    } else {
+      gameState.round++;
+      state.phase = 'SETUP';
+      renderer.stopAnimation();
+      lastResult = null;
+      randomiseParams();
+      updateGameHUD();
+      setPhaseUI();
+      redrawSetup();
+    }
   });
 
   // ── RANDOM button ─────────────────────────────────────────────────────
@@ -220,25 +307,46 @@ export function initUI() {
 
   // ── Phase UI sync ──────────────────────────────────────────────────────
   function setPhaseUI() {
-    const isSetup  = state.phase === 'SETUP';
-    const isResult = state.phase === 'RESULT';
+    const isSetup   = state.phase === 'SETUP';
+    const isResult  = state.phase === 'RESULT';
+    const isGame    = state.mode === 'game';
+    const isGameOver = isGame && isResult && gameState.round >= gameState.total;
 
-    puttBtn.style.display    = isResult ? 'none' : '';
-    puttBtn.disabled         = !isSetup;
-    retryBtn.style.display   = isResult ? ''     : 'none';
+    // Putt button: hidden during result
+    puttBtn.style.display = isResult ? 'none' : '';
+    puttBtn.disabled      = !isSetup;
+
+    // Practice-only buttons
+    retryBtn.style.display  = (!isGame && isResult) ? ''     : 'none';
+    randomBtn.style.display = isGame                ? 'none' : '';
+    randomBtn.disabled      = false;
+
+    // Game-only buttons
+    nextBtn.style.display  = (isGame && isResult) ? '' : 'none';
+    nextBtn.textContent    = isGameOver ? '🔁 Play Again' : 'Next Putt →';
 
     // Swap aim-display ↔ result-legend (same height slot, no layout shift)
     aimDisplay.style.display    = isResult ? 'none'  : '';
     resultLegend.style.display  = isResult ? 'flex'  : 'none';
 
+    // Game HUD visibility
+    gameHud.style.display = isGame ? 'flex' : 'none';
+
+    // Sliders/break buttons: disabled when not in setup, or always locked in game mode
+    const lockControls = !isSetup || isGame;
     [distSlider, stimpSlider, breakSlider, pastSlider, btnLeft, btnStraight, btnRight]
-      .forEach(el => { el.disabled = !isSetup; });
-    randomBtn.disabled = false;  // always pressable
+      .forEach(el => { el.disabled = lockControls; });
   }
 
   // ── Redraw on resize (orientation change, etc.) ──────────────────────
   window.addEventListener('resize', () => {
     if (state.phase === 'SETUP') redrawSetup();
+    else if (state.phase === 'RESULT' && lastResult) {
+      renderer.drawResult(
+        lastResult.path, lastResult.hDist, lastResult.holed, lastResult.stopDist,
+        lastResult.aimOffsetM, lastResult.correctAimM
+      );
+    }
   });
 
   // ── Init ───────────────────────────────────────────────────────────────
