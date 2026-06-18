@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Putting Simulator</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -20,8 +20,12 @@
       <canvas id="green-canvas"></canvas>
     </div>
 
-    <!-- Aim readout -->
+    <!-- Aim readout / Result legend — same slot, swap on result -->
     <div id="aim-display" class="aim-display">Aim: Straight at hole</div>
+    <div id="result-legend" class="result-legend" style="display:none">
+      <span class="leg-user">⬤ Your aim</span>
+      <span class="leg-correct">⬤ Optimal aim</span>
+    </div>
 
     <!-- Controls -->
     <section class="controls">
@@ -74,12 +78,6 @@
     <div class="btn-area">
       <button id="btn-putt"  class="btn-putt">Putt</button>
       <button id="btn-retry" class="btn-retry" style="display:none">↺ Try Again</button>
-    </div>
-
-    <!-- Result legend (shown after putt) -->
-    <div id="result-legend" class="result-legend" style="display:none">
-      <span class="leg-user">⬤ Your aim</span>
-      <span class="leg-correct">⬤ Optimal aim</span>
     </div>
 
   </main>

@@ -183,11 +183,13 @@ export function initUI() {
     const isSetup  = state.phase === 'SETUP';
     const isResult = state.phase === 'RESULT';
 
-    puttBtn.style.display  = isResult ? 'none'  : '';
-    puttBtn.disabled       = !isSetup;
-    retryBtn.style.display = isResult ? ''      : 'none';
+    puttBtn.style.display    = isResult ? 'none' : '';
+    puttBtn.disabled         = !isSetup;
+    retryBtn.style.display   = isResult ? ''     : 'none';
 
-    resultLegend.style.display = isResult ? 'flex' : 'none';
+    // Swap aim-display ↔ result-legend (same height slot, no layout shift)
+    aimDisplay.style.display    = isResult ? 'none'  : '';
+    resultLegend.style.display  = isResult ? 'flex'  : 'none';
 
     [distSlider, stimpSlider, breakSlider, pastSlider, btnLeft, btnStraight, btnRight]
       .forEach(el => { el.disabled = !isSetup; });

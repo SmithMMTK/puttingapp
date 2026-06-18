@@ -17,7 +17,7 @@
 }
 
 /* ── Full-viewport layout — no page scroll ── */
-html, body {
+html {
   height: 100%;
   overflow: hidden;
 }
@@ -27,19 +27,23 @@ body {
   background: var(--green-bg);
   color: var(--text);
   height: 100dvh;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   padding: 0 0.6rem;
+  /* iOS safe area (home indicator) */
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .app {
   width: 100%;
   max-width: 440px;
-  height: 100dvh;
+  flex: 1;          /* fill body, do NOT use fixed height: 100dvh */
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  padding: 0.4rem 0 0.5rem;
+  padding: 0.4rem 0 0.3rem;
 }
 
 /* ── Header ── */
@@ -75,20 +79,25 @@ main {
 }
 #green-canvas { display: block; width: 100%; height: 100%; }
 
-/* ── Aim display ── */
-.aim-display {
+/* ── Aim display / Result legend — same slot ── */
+.aim-display, .result-legend {
   flex-shrink: 0;
   text-align: center;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--gold);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 4px 10px;
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.aim-display { color: var(--gold); }
+.result-legend { gap: 1.2rem; }
 
 /* ── Controls — 2-column grid ── */
 .controls {
@@ -213,18 +222,6 @@ input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
   transition: background 0.15s;
 }
 .btn-retry:hover { background: rgba(74,222,128,0.08); }
-
-/* ── Result legend ── */
-.result-legend {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  gap: 1.2rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-.leg-user    { color: var(--gold); }
-.leg-correct { color: var(--accent); }
 
 /* ── Footer hidden on mobile, shown on desktop ── */
 footer { display: none; }
