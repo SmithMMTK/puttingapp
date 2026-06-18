@@ -62,7 +62,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  overflow: hidden;
+  /* No overflow:hidden here — it clips touch hit-targets on iOS Safari */
 }
 
 /* ── Canvas — expands to fill available space ── */
@@ -191,6 +191,13 @@ input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Action buttons ── */
 .btn-area { flex-shrink: 0; display: flex; gap: 8px; }
+
+.btn-putt, .btn-retry, .btn-random {
+  /* iOS Safari: remove 300ms tap delay, ensure taps register */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
 
 .btn-putt {
   flex: 1;

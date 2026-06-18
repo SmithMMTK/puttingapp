@@ -193,8 +193,8 @@ export function initUI() {
     } else {
       state.breakDir = Math.random() < 0.5 ? -1 : 1;
     }
-    // Firmness: 1–5 ft in 0.5 steps (bias toward 1–2.5 ft — realistic range)
-    state.pastFeet = 1 + Math.round(Math.random() * 6) * 0.5;
+    // Firmness: 1–3 ft in 0.5 steps
+    state.pastFeet = 1 + Math.round(Math.random() * 4) * 0.5;
     // Reset aim to straight — let user discover the break
     state.aimOffsetM = 0;
 
