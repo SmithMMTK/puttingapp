@@ -232,7 +232,7 @@ export function initUI() {
 
     [distSlider, stimpSlider, breakSlider, pastSlider, btnLeft, btnStraight, btnRight]
       .forEach(el => { el.disabled = !isSetup; });
-    randomBtn.disabled = !isSetup;
+    randomBtn.disabled = false;  // always pressable
   }
 
   // ── Redraw on resize (orientation change, etc.) ──────────────────────
