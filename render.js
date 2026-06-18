@@ -31,14 +31,29 @@ export class Renderer {
    * Compute scale with physical padding so short putts zoom in and long putts zoom out.
    * PAD_M metres of green are shown above the hole and below the ball —
    * a 3-ft putt feels closer than a 30-ft putt.
+   * If `path` is provided, the view expands to keep the ball always visible.
    */
-  _setupGeometry(holeDistM) {
+  _setupGeometry(holeDistM, path) {
     const W = this.canvas.width, H = this.canvas.height;
     const PAD_M = 0.55; // green padding above hole and below ball (~1.8 ft)
-    // Fit (holeDist + 2·PAD) vertically; holeDist laterally (±50% each side)
-    const scaleY = (H - 20) / (holeDistM + 2 * PAD_M);
-    const scaleX = (W - 20) / (holeDistM * 1.0);
+
+    // Compute the furthest extent the ball travels (y = forward, x = lateral)
+    let maxY = holeDistM, maxAbsX = holeDistM * 0.5;
+    if (path && path.length) {
+      for (const pt of path) {
+        if (pt.y > maxY) maxY = pt.y;
+        if (Math.abs(pt.x) > maxAbsX) maxAbsX = Math.abs(pt.x);
+      }
+    }
+
+    // Pad beyond the furthest point so the ball doesn't sit on the edge
+    const spanY = maxY + PAD_M;        // top of view (ball starts at 0, travels to maxY)
+    const spanX = maxAbsX * 2 + 0.3;  // lateral span with a little breathing room
+
+    const scaleY = (H - 20) / (spanY + PAD_M); // PAD_M below ball too
+    const scaleX = (W - 20) / spanX;
     const scale  = Math.min(scaleY, scaleX);
+
     this._scale     = scale;
     this._W = W; this._H = H;
     this._holeDistM = holeDistM;
@@ -205,7 +220,7 @@ export class Renderer {
    */
   animate(path, holeDistM, holed, stopDist, onDone) {
     this.stopAnimation();
-    this._setupGeometry(holeDistM);
+    this._setupGeometry(holeDistM, path); // zoom out if ball travels past hole
 
     // Generation guard: stale onDone callbacks from a cancelled animation are dropped.
     const gen = (this._animGen = (this._animGen || 0) + 1);
@@ -270,7 +285,7 @@ export class Renderer {
    * RESULT state: full path + user aim dot (gold) + correct aim dot (green).
    */
   drawResult(path, holeDistM, holed, stopDist, aimOffsetM, correctAimM) {
-    this._setupGeometry(holeDistM);
+    this._setupGeometry(holeDistM, path); // zoom out if ball travelled past hole
     this._drawGreen();
 
     // Full path
