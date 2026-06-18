@@ -23,6 +23,7 @@ export function initUI() {
   const btnRight    = document.getElementById('btn-right');
   const puttBtn     = document.getElementById('btn-putt');
   const retryBtn    = document.getElementById('btn-retry');
+  const randomBtn   = document.getElementById('btn-random');
   const aimDisplay  = document.getElementById('aim-display');
   const resultLegend = document.getElementById('result-legend');
 
@@ -178,6 +179,44 @@ export function initUI() {
     redrawSetup();
   });
 
+  // ── RANDOM button ─────────────────────────────────────────────────────
+  function randomiseParams() {
+    // Distance: 1–30 ft in 1 ft steps
+    state.distanceFt = Math.floor(Math.random() * 30) + 1;
+    // Stimp: 8–12 in 0.5 steps
+    state.stimp = 8 + Math.round(Math.random() * 8) * 0.5;
+    // Slope: 0–7% in 0.5 steps
+    state.breakMag = Math.round(Math.random() * 14) * 0.5;
+    // Break direction (if slope > 0: random left/right; else straight)
+    if (state.breakMag === 0) {
+      state.breakDir = 0;
+    } else {
+      state.breakDir = Math.random() < 0.5 ? -1 : 1;
+    }
+    // Firmness: 1–5 ft in 0.5 steps (bias toward 1–2.5 ft — realistic range)
+    state.pastFeet = 1 + Math.round(Math.random() * 6) * 0.5;
+    // Reset aim to straight — let user discover the break
+    state.aimOffsetM = 0;
+
+    // Sync all DOM controls
+    distSlider.value  = state.distanceFt;
+    stimpSlider.value = state.stimp;
+    breakSlider.value = state.breakMag;
+    pastSlider.value  = state.pastFeet;
+    distVal.textContent  = state.distanceFt + ' ft';
+    stimpVal.textContent = state.stimp.toFixed(1);
+    breakVal.textContent = state.breakMag.toFixed(1) + '%';
+    pastVal.textContent  = state.pastFeet.toFixed(1) + ' ft';
+    syncBreakBtns();
+  }
+
+  randomBtn.addEventListener('click', () => {
+    randomiseParams();
+    state.phase = 'SETUP';
+    setPhaseUI();
+    redrawSetup();
+  });
+
   // ── Phase UI sync ──────────────────────────────────────────────────────
   function setPhaseUI() {
     const isSetup  = state.phase === 'SETUP';
@@ -193,6 +232,7 @@ export function initUI() {
 
     [distSlider, stimpSlider, breakSlider, pastSlider, btnLeft, btnStraight, btnRight]
       .forEach(el => { el.disabled = !isSetup; });
+    randomBtn.disabled = !isSetup;
   }
 
   // ── Redraw on resize (orientation change, etc.) ──────────────────────

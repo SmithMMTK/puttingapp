@@ -190,10 +190,10 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Action buttons ── */
-.btn-area { flex-shrink: 0; display: flex; }
+.btn-area { flex-shrink: 0; display: flex; gap: 8px; }
 
 .btn-putt {
-  width: 100%;
+  flex: 1;
   padding: 12px;
   font-size: 1rem;
   font-weight: 700;
@@ -210,7 +210,7 @@ input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-putt:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .btn-retry {
-  width: 100%;
+  flex: 1;
   padding: 11px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -222,6 +222,21 @@ input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
   transition: background 0.15s;
 }
 .btn-retry:hover { background: rgba(74,222,128,0.08); }
+
+.btn-random {
+  flex-shrink: 0;
+  padding: 11px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gold);
+  background: transparent;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-random:hover { background: rgba(250,204,21,0.08); }
+.btn-random:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Footer hidden on mobile, shown on desktop ── */
 footer { display: none; }
