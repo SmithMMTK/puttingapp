@@ -211,6 +211,7 @@ export function initUI() {
   }
 
   randomBtn.addEventListener('click', () => {
+    renderer.stopAnimation();
     randomiseParams();
     state.phase = 'SETUP';
     setPhaseUI();

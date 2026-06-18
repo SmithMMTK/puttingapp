@@ -207,11 +207,14 @@ export class Renderer {
     this.stopAnimation();
     this._setupGeometry(holeDistM);
 
-    const totalT = path[path.length - 1].t;
+    // Generation guard: stale onDone callbacks from a cancelled animation are dropped.
+    const gen = (this._animGen = (this._animGen || 0) + 1);
+
     const tScale = 1.0; // real-time: animation speed matches actual physics time
     let t0 = null;
 
     const frame = (now) => {
+      if (gen !== this._animGen) return; // cancelled — drop silently
       if (!t0) t0 = now;
       const simT = ((now - t0) / 1000) * tScale;
       let idx = path.findIndex(p => p.t >= simT);
@@ -303,6 +306,7 @@ export class Renderer {
 
   stopAnimation() {
     if (this._animId) { cancelAnimationFrame(this._animId); this._animId = null; }
+    this._animGen = (this._animGen || 0) + 1; // invalidate any in-flight frame callbacks
   }
 
   /** Initial idle state before first interaction. */
