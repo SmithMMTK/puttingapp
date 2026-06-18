@@ -54,7 +54,7 @@ export function simulate(v0, aimDeg, mu, slopePerp, holeDist, dt = 0.002) {
     if (Math.sqrt(x * x + (y - holeDist) ** 2) <= HOLE_CAP_R && spd2 <= MAX_ENTRY_SPD) {
       return { path, holed: true, stopDist: 0 };
     }
-    if (y > holeDist + 2 || (y < -0.5 && t > 1)) break;
+    if (y > holeDist + 2 || (y < -0.5 && t > 1) || Math.abs(x) > holeDist * 2 + 2) break;
   }
 
   return { path, holed: false, stopDist: Math.sqrt(x * x + (y - holeDist) ** 2) };
