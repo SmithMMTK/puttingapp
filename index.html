@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Putting Simulator</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>🏌️ Putting Simulator</h1>
+  </header>
+
+  <main>
+
+    <!-- Green canvas -->
+    <div class="canvas-wrap">
+      <canvas id="green-canvas"></canvas>
+    </div>
+
+    <!-- Aim readout -->
+    <div id="aim-display" class="aim-display">Aim: Straight at hole</div>
+
+    <!-- Controls -->
+    <section class="controls">
+
+      <!-- Break direction -->
+      <div class="control-row">
+        <span class="ctrl-label">Break</span>
+        <div class="break-btns">
+          <button id="btn-left"     class="break-btn">◀ Left</button>
+          <button id="btn-straight" class="break-btn">Straight</button>
+          <button id="btn-right"    class="break-btn active">Right ▶</button>
+        </div>
+      </div>
+
+      <!-- Break magnitude -->
+      <div class="control-row">
+        <label for="break-mag" class="ctrl-label">
+          Slope <span id="break-val" class="val">2.0%</span>
+        </label>
+        <input type="range" id="break-mag" min="0" max="7" step="0.5" value="2" />
+        <div class="range-labels"><span>0%</span><span>7%</span></div>
+      </div>
+
+      <!-- Distance -->
+      <div class="control-row">
+        <label for="distance" class="ctrl-label">
+          Distance <span id="distance-val" class="val">12 ft</span>
+        </label>
+        <input type="range" id="distance" min="1" max="30" step="1" value="12" />
+        <div class="range-labels"><span>1 ft</span><span>30 ft</span></div>
+      </div>
+
+      <!-- Green speed -->
+      <div class="control-row">
+        <label for="stimp" class="ctrl-label">
+          Stimp <span id="stimp-val" class="val">8.0</span>
+        </label>
+        <input type="range" id="stimp" min="8" max="12" step="0.5" value="8" />
+        <div class="range-labels"><span>8 (slow)</span><span>12 (fast)</span></div>
+      </div>
+
+      <!-- Putt firmness: how far past hole -->
+      <div class="control-row">
+        <label for="past-feet" class="ctrl-label">
+          Firmness <span id="past-val" class="val">1.5 ft</span>
+        </label>
+        <input type="range" id="past-feet" min="1" max="5" step="0.5" value="1.5" />
+        <div class="range-labels"><span>1 ft (die at hole)</span><span>5 ft (firm)</span></div>
+      </div>
+
+    </section>
+
+    <!-- Action buttons -->
+    <div class="btn-area">
+      <button id="btn-putt"  class="btn-putt">Putt</button>
+      <button id="btn-retry" class="btn-retry" style="display:none">↺ Try Again</button>
+    </div>
+
+    <!-- Result legend (shown after putt) -->
+    <div id="result-legend" class="result-legend" style="display:none">
+      <span class="leg-user">⬤ Your aim</span>
+      <span class="leg-correct">⬤ Optimal aim</span>
+    </div>
+
+  </main>
+
+  <footer>
+    <p class="disclaimer">
+      Assumes uniform slope throughout. Does not model grain, undulation, or compound break.
+      Use as a guide, not a precise forecast.
+    </p>
+  </footer>
+
+</div>
+<script type="module">
+  import { initUI } from './ui.js';
+  initUI();
+</script>
+</body>
+</html>
