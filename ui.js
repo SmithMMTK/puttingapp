@@ -75,6 +75,13 @@ export function initUI() {
   }
 
   function redrawSetup() {
+    renderer.setStats({
+      distanceFt: state.distanceFt,
+      stimp:      state.stimp,
+      breakMag:   state.breakMag,
+      breakDir:   state.breakDir,
+      pastFeet:   state.pastFeet,
+    });
     renderer.drawSetup(holeDistM(), state.aimOffsetM, slopePerp());
     aimDisplay.textContent = aimLabel();
   }
@@ -229,6 +236,14 @@ export function initUI() {
 
     const mu = stimpToMu(state.stimp);
     state.correctAimM = solveCorrectAim(mu, slopePerp(), state.distanceFt, state.pastFeet);
+
+    renderer.setStats({
+      distanceFt: state.distanceFt,
+      stimp:      state.stimp,
+      breakMag:   state.breakMag,
+      breakDir:   state.breakDir,
+      pastFeet:   state.pastFeet,
+    });
 
     const v0     = standardV0(mu, holeDistM(), state.pastFeet);
     const aimDeg = Math.atan2(state.aimOffsetM, holeDistM()) * (180 / Math.PI);

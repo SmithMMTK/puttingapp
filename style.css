@@ -243,9 +243,10 @@ main {
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .break-btn.active {
-  background: var(--green-mid);
-  color: var(--accent);
-  border-color: var(--accent);
+  background: #ffd700;
+  color: #0f2417;
+  border-color: #ffd700;
+  font-weight: 800;
 }
 .break-btn:hover:not(:disabled):not(.active) { background: #1e4a2a; color: var(--text); }
 .break-btn:disabled { opacity: 0.45; cursor: not-allowed; }

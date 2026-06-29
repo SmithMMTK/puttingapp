@@ -15,6 +15,7 @@ export class Renderer {
     this._ballPx = { x: 0, y: 0 };
     this._holePx = { x: 0, y: 0 };
     this._aimPx  = { x: 0, y: 0 };
+    this._stats  = null;
     this._resize();
     window.addEventListener('resize', () => this._resize());
   }
@@ -211,6 +212,41 @@ export class Renderer {
 
   // ─── Public API ──────────────────────────────────────────────────────────
 
+  /** Store current scenario parameters to display in canvas overlay. */
+  setStats(stats) { this._stats = stats; }
+
+  _drawStatsOverlay() {
+    if (!this._stats) return;
+    const { ctx, _W: W } = this;
+    const { distanceFt, stimp, breakMag, breakDir, pastFeet } = this._stats;
+    const dirLabel = breakDir > 0 ? '▶ Right' : '◀ Left';
+    const lines = [
+      `Break  ${dirLabel} ${breakMag.toFixed(1)}%`,
+      `Dist   ${distanceFt} ft`,
+      `Stimp  ${stimp.toFixed(1)}`,
+      `Firm   ${pastFeet.toFixed(1)} ft`,
+    ];
+    ctx.save();
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    const lineH = 16, pad = 7;
+    const boxW  = 130, boxH = lines.length * lineH + pad * 2;
+    const bx = W - 8, by = 8;
+    // Background pill
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx - boxW, by, boxW, boxH, 7);
+    else ctx.rect(bx - boxW, by, boxW, boxH);
+    ctx.fill();
+    // Yellow text
+    ctx.fillStyle = '#ffd700';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, bx - pad, by + pad + i * lineH);
+    });
+    ctx.restore();
+  }
+
   /**
    * SETUP state: green + hole + ball + aim line + draggable aimpoint.
    * @param {number} holeDistM
@@ -236,6 +272,7 @@ export class Renderer {
 
     // Ball (at origin)
     this._drawBall(this._ballPx.x, this._ballPx.y);
+    this._drawStatsOverlay();
   }
 
   /**
@@ -296,6 +333,7 @@ export class Renderer {
       // Moving ball
       const cur = this._toCanvas(path[idx].x, path[idx].y);
       this._drawBall(cur.cx, cur.cy, true);
+      this._drawStatsOverlay();
 
       if (idx < path.length - 1) {
         this._animId = requestAnimationFrame(frame);
@@ -342,7 +380,7 @@ export class Renderer {
     const last = path[path.length - 1];
     const lp   = this._toCanvas(last.x, last.y);
     this._drawBall(lp.cx, lp.cy);
-
+    this._drawStatsOverlay();
     this._drawResultOverlay(holed, stopDist);
   }
 
