@@ -11,9 +11,12 @@
 
   <header>
     <h1>🏌️ Putting Simulator</h1>
-    <div class="mode-toggle">
-      <button id="btn-mode-practice" class="mode-btn active">Practice</button>
-      <button id="btn-mode-game"     class="mode-btn">🎯 Game</button>
+    <div class="header-right">
+      <span id="game-score-badge" class="game-score-badge" style="display:none">⛳ <span id="game-pts">0</span> pts</span>
+      <div class="mode-toggle">
+        <button id="btn-mode-practice" class="mode-btn active">Practice</button>
+        <button id="btn-mode-game"     class="mode-btn">🎯 Game</button>
+      </div>
     </div>
   </header>
 
@@ -22,12 +25,14 @@
     <!-- Green canvas -->
     <div class="canvas-wrap">
       <canvas id="green-canvas"></canvas>
-    </div>
-
-    <!-- Game HUD — round counter + score (game mode only) -->
-    <div id="game-hud" class="game-hud" style="display:none">
-      <span id="game-round-label">Putt 1 / 10</span>
-      <span id="game-score-label">⛳ 0 made</span>
+      <!-- Game-over overlay (shown after all 100 putts) -->
+      <div id="game-over-overlay" class="game-over-overlay" style="display:none">
+        <div class="game-over-card">
+          <div class="game-over-title">🏆 Game Complete!</div>
+          <div id="game-over-score" class="game-over-score">0 / 100</div>
+          <div id="game-over-rating" class="game-over-rating"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Aim readout / Result legend — same slot, swap on result -->

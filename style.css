@@ -62,6 +62,24 @@ header h1 {
   padding: 0.1rem 0;
   flex-shrink: 0;
 }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Game score badge (top-right, game mode only) ── */
+.game-score-badge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 /* ── Mode toggle ── */
 .mode-toggle { display: flex; gap: 5px; }
@@ -85,25 +103,48 @@ header h1 {
 }
 .mode-btn:hover:not(.active) { background: #1e4a2a; color: var(--text); }
 
-/* ── Game HUD ── */
-.game-hud {
-  flex-shrink: 0;
+/* ── Game HUD (legacy — kept for compatibility) ── */
+.game-hud { display: none; }
+
+/* ── Game-over overlay ── */
+.game-over-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: var(--radius);
+}
+.game-over-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px 12px;
-  font-size: 0.82rem;
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 1.8rem 2.4rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.game-over-title {
+  font-size: 1.25rem;
   font-weight: 700;
-  min-height: 28px;
+  color: var(--accent);
+}
+.game-over-score {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-#game-round-label { color: var(--muted); }
-#game-score-label { color: var(--accent); }
+.game-over-rating {
+  font-size: 1rem;
+  color: var(--muted);
+  font-weight: 600;
+}
 
-/* ── Main — fills remaining height ── */
+/* ── Aim display / Result legend — same slot ── */
 main {
   flex: 1;
   min-height: 0;
@@ -117,6 +158,7 @@ main {
 .canvas-wrap {
   flex: 1;
   min-height: 0;
+  position: relative;
   background: var(--green-dark);
   border: 1px solid var(--border);
   border-radius: var(--radius);

@@ -1,10 +1,11 @@
 /**
  * ui.js — State machine + interactions
- * States: SETUP → ROLLING → RESULT → SETUP
+ * States: SETUP → ROLLING → RESULT → SETUP  (or GAMEOVER after all 100 scenarios)
  */
 
 import { stimpToMu, standardV0, simulate, solveCorrectAim } from './physics.js';
 import { Renderer } from './render.js';
+import { SCENARIOS } from './scenarios.js';
 
 export function initUI() {
   const canvas     = document.getElementById('green-canvas');
@@ -26,9 +27,11 @@ export function initUI() {
   const nextBtn     = document.getElementById('btn-next');
   const aimDisplay  = document.getElementById('aim-display');
   const resultLegend = document.getElementById('result-legend');
-  const gameHud        = document.getElementById('game-hud');
-  const gameRoundLabel = document.getElementById('game-round-label');
-  const gameScoreLabel = document.getElementById('game-score-label');
+  const gameScoreBadge = document.getElementById('game-score-badge');
+  const gamePts        = document.getElementById('game-pts');
+  const gameOverOverlay = document.getElementById('game-over-overlay');
+  const gameOverScore   = document.getElementById('game-over-score');
+  const gameOverRating  = document.getElementById('game-over-rating');
   const modePracticeBtn = document.getElementById('btn-mode-practice');
   const modeGameBtn     = document.getElementById('btn-mode-game');
 
@@ -38,17 +41,22 @@ export function initUI() {
     stimp:        9,
     breakMag:     2,    // 1–4 %
     breakDir:     1,    // +1=right, -1=left
-    pastFeet:     1.5,  // how far past hole ball would roll on flat miss (1–5 ft)
-    aimOffsetM:   0,    // user's lateral aim offset (metres at hole level; −=left)
-    phase:       'SETUP', // SETUP | ROLLING | RESULT
+    pastFeet:     1.5,
+    aimOffsetM:   0,    // user's lateral aim offset (metres; −=left)
+    phase:       'SETUP', // SETUP | ROLLING | RESULT | GAMEOVER
     correctAimM:  null,
     mode:        'practice', // 'practice' | 'game'
   };
 
-  const gameState = { round: 0, score: 0, total: 10 };
+  // gameState tracks progress through the 100 fixed scenarios
+  const gameState = {
+    scenarioIdx: 0,   // 0-based index into SCENARIOS
+    score:       0,   // points earned
+  };
+  const TOTAL = SCENARIOS.length; // 100
 
-  let tracking = false; // canvas drag in progress
-  let lastResult = null; // stored for resize-redraw during RESULT phase
+  let tracking = false;
+  let lastResult = null;
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function slopePerp() { return state.breakDir * state.breakMag; }
@@ -72,34 +80,49 @@ export function initUI() {
   }
 
   // ── Game helpers ──────────────────────────────────────────────────────
-  function gameRating(score, total) {
-    const pct = score / total;
-    if (pct === 1)   return 'Perfect! 🏆';
+  function gameRating(score) {
+    const pct = score / TOTAL;
+    if (pct === 1)   return 'Perfect round! 🏆';
     if (pct >= 0.8)  return 'Excellent! 🌟';
-    if (pct >= 0.6)  return 'Good round 👍';
+    if (pct >= 0.6)  return 'Great game 👍';
     if (pct >= 0.4)  return 'Not bad 🤔';
     if (pct >= 0.2)  return 'Keep practicing 💪';
     return 'Try again! 😅';
   }
 
-  function updateGameHUD() {
-    if (gameState.round > gameState.total) {
-      gameRoundLabel.textContent = 'Game Over!';
-      gameScoreLabel.textContent = `⛳ ${gameState.score}/${gameState.total} — ${gameRating(gameState.score, gameState.total)}`;
-    } else {
-      gameRoundLabel.textContent = `Putt ${gameState.round} / ${gameState.total}`;
-      gameScoreLabel.textContent = `⛳ ${gameState.score} made`;
-    }
+  function updateScoreBadge() {
+    gamePts.textContent = gameState.score;
+  }
+
+  // Load a fixed scenario by 0-based index into state + DOM controls
+  function loadScenario(idx) {
+    const s = SCENARIOS[idx];
+    state.distanceFt = s.distanceFt;
+    state.stimp      = s.stimp;
+    state.breakMag   = s.breakMag;
+    state.breakDir   = s.breakDir;
+    state.pastFeet   = s.pastFeet;
+    state.aimOffsetM = 0;
+
+    distSlider.value  = s.distanceFt;
+    stimpSlider.value = s.stimp;
+    breakSlider.value = s.breakMag;
+    pastSlider.value  = s.pastFeet;
+    distVal.textContent  = s.distanceFt + ' ft';
+    stimpVal.textContent = s.stimp.toFixed(1);
+    breakVal.textContent = s.breakMag.toFixed(1) + '%';
+    pastVal.textContent  = s.pastFeet.toFixed(1) + ' ft';
+    syncBreakBtns();
   }
 
   function startGame() {
-    gameState.round = 1;
-    gameState.score = 0;
+    gameState.scenarioIdx = 0;
+    gameState.score       = 0;
     state.phase = 'SETUP';
     renderer.stopAnimation();
     lastResult = null;
-    randomiseParams();
-    updateGameHUD();
+    loadScenario(0);
+    updateScoreBadge();
     setPhaseUI();
     redrawSetup();
   }
@@ -204,11 +227,9 @@ export function initUI() {
   puttBtn.addEventListener('click', () => {
     if (state.phase !== 'SETUP') return;
 
-    // Compute correct aim for post-result display
     const mu = stimpToMu(state.stimp);
     state.correctAimM = solveCorrectAim(mu, slopePerp(), state.distanceFt, state.pastFeet);
 
-    // Simulate with user's aim + selected putt firmness
     const v0     = standardV0(mu, holeDistM(), state.pastFeet);
     const aimDeg = Math.atan2(state.aimOffsetM, holeDistM()) * (180 / Math.PI);
     const result = simulate(v0, aimDeg, mu, slopePerp(), holeDistM());
@@ -218,9 +239,11 @@ export function initUI() {
 
     renderer.animate(result.path, holeDistM(), result.holed, result.stopDist, () => {
       state.phase = 'RESULT';
-      if (state.mode === 'game' && result.holed) gameState.score++;
+      if (state.mode === 'game' && result.holed) {
+        gameState.score++;
+        updateScoreBadge();
+      }
       setPhaseUI();
-      if (state.mode === 'game') updateGameHUD();
       const hDist = holeDistM();
       lastResult = {
         path: result.path, hDist, holed: result.holed, stopDist: result.stopDist,
@@ -242,36 +265,38 @@ export function initUI() {
 
   // ── NEXT PUTT / PLAY AGAIN button (game mode) ─────────────────────────
   nextBtn.addEventListener('click', () => {
-    if (gameState.round >= gameState.total) {
-      startGame(); // game over → start fresh
+    if (state.phase === 'GAMEOVER') {
+      // Play Again — restart from scenario 1
+      startGame();
+      return;
+    }
+    const isLastPutt = gameState.scenarioIdx >= TOTAL - 1;
+    if (isLastPutt) {
+      // Show game-over screen
+      state.phase = 'GAMEOVER';
+      gameOverScore.textContent  = `${gameState.score} / ${TOTAL}`;
+      gameOverRating.textContent = gameRating(gameState.score);
+      setPhaseUI();
     } else {
-      gameState.round++;
+      gameState.scenarioIdx++;
       state.phase = 'SETUP';
       renderer.stopAnimation();
       lastResult = null;
-      randomiseParams();
-      updateGameHUD();
+      loadScenario(gameState.scenarioIdx);
       setPhaseUI();
       redrawSetup();
     }
   });
 
-  // ── RANDOM button ─────────────────────────────────────────────────────
+  // ── RANDOM button (practice mode only) ───────────────────────────────
   function randomiseParams() {
-    // Distance: 1–30 ft in 1 ft steps
     state.distanceFt = Math.floor(Math.random() * 30) + 1;
-    // Stimp: 8–12 in 0.5 steps
-    state.stimp = 8 + Math.round(Math.random() * 8) * 0.5;
-    // Slope: 1–4% in 0.5 steps
-    state.breakMag = 1 + Math.round(Math.random() * 6) * 0.5;
-    // Break direction: random left/right
-    state.breakDir = Math.random() < 0.5 ? -1 : 1;
-    // Firmness: 1–3 ft in 0.5 steps
-    state.pastFeet = 1 + Math.round(Math.random() * 4) * 0.5;
-    // Reset aim to straight — let user discover the break
+    state.stimp      = 8 + Math.round(Math.random() * 8) * 0.5;
+    state.breakMag   = 1 + Math.round(Math.random() * 6) * 0.5;
+    state.breakDir   = Math.random() < 0.5 ? -1 : 1;
+    state.pastFeet   = 1 + Math.round(Math.random() * 4) * 0.5;
     state.aimOffsetM = 0;
 
-    // Sync all DOM controls
     distSlider.value  = state.distanceFt;
     stimpSlider.value = state.stimp;
     breakSlider.value = state.breakMag;
@@ -293,38 +318,44 @@ export function initUI() {
 
   // ── Phase UI sync ──────────────────────────────────────────────────────
   function setPhaseUI() {
-    const isSetup   = state.phase === 'SETUP';
-    const isResult  = state.phase === 'RESULT';
-    const isGame    = state.mode === 'game';
-    const isGameOver = isGame && isResult && gameState.round >= gameState.total;
+    const isSetup    = state.phase === 'SETUP';
+    const isResult   = state.phase === 'RESULT';
+    const isGameOver = state.phase === 'GAMEOVER';
+    const isGame     = state.mode === 'game';
+    const isLastPutt = isGame && gameState.scenarioIdx >= TOTAL - 1;
 
-    // Putt button: hidden during result
-    puttBtn.style.display = isResult ? 'none' : '';
+    // Score badge: visible in game mode (even on game-over screen)
+    gameScoreBadge.style.display = isGame ? '' : 'none';
+
+    // Game-over overlay
+    gameOverOverlay.style.display = isGameOver ? 'flex' : 'none';
+
+    // Putt button: hidden during result/gameover
+    puttBtn.style.display = (isResult || isGameOver) ? 'none' : '';
     puttBtn.disabled      = !isSetup;
 
     // Practice-only buttons
-    retryBtn.style.display  = (!isGame && isResult) ? ''     : 'none';
-    randomBtn.style.display = isGame                ? 'none' : '';
+    retryBtn.style.display  = (!isGame && isResult) ? '' : 'none';
+    randomBtn.style.display = isGame ? 'none' : '';
     randomBtn.disabled      = false;
 
-    // Game-only buttons
-    nextBtn.style.display  = (isGame && isResult) ? '' : 'none';
-    nextBtn.textContent    = isGameOver ? '🔁 Play Again' : 'Next Putt →';
+    // Game-only next button
+    nextBtn.style.display = (isGame && (isResult || isGameOver)) ? '' : 'none';
+    if (isGameOver)       nextBtn.textContent = '🔄 Play Again';
+    else if (isLastPutt)  nextBtn.textContent = '🏆 Finish';
+    else                  nextBtn.textContent = 'Next Putt →';
 
-    // Swap aim-display ↔ result-legend (same height slot, no layout shift)
-    aimDisplay.style.display    = isResult ? 'none'  : '';
-    resultLegend.style.display  = isResult ? 'flex'  : 'none';
+    // Swap aim-display ↔ result-legend
+    aimDisplay.style.display   = (isResult || isGameOver) ? 'none' : '';
+    resultLegend.style.display = isResult ? 'flex' : 'none';
 
-    // Game HUD visibility
-    gameHud.style.display = isGame ? 'flex' : 'none';
-
-    // Sliders/break buttons: disabled when not in setup, or always locked in game mode
-    const lockControls = !isSetup || isGame;
+    // Lock controls during rolling/result in game mode, or during gameover
+    const lockControls = !isSetup || isGame || isGameOver;
     [distSlider, stimpSlider, breakSlider, pastSlider, btnLeft, btnRight]
       .forEach(el => { el.disabled = lockControls; });
   }
 
-  // ── Redraw on resize (orientation change, etc.) ──────────────────────
+  // ── Redraw on resize ──────────────────────────────────────────────────
   window.addEventListener('resize', () => {
     if (state.phase === 'SETUP') redrawSetup();
     else if (state.phase === 'RESULT' && lastResult) {
