@@ -61,7 +61,7 @@ export function initUI() {
 
   function aimLabel() {
     const inches = Math.abs(state.aimOffsetM) * 39.37;
-    if (Math.abs(state.aimOffsetM) < 0.008) return 'Aim: Straight at hole';
+    if (Math.abs(state.aimOffsetM) < 0.008) return 'Aim: At hole';
     const dir = state.aimOffsetM < 0 ? 'left' : 'right';
     return `Aim: ${inches.toFixed(1)}" ${dir} of hole`;
   }
