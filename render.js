@@ -10,6 +10,8 @@ export class Renderer {
     this.ctx     = canvas.getContext('2d');
     this._animId = null;
     this._scale  = 1;
+    this._holeRPx = 9;
+    this._ballRPx = 4;
     this._ballPx = { x: 0, y: 0 };
     this._holePx = { x: 0, y: 0 };
     this._aimPx  = { x: 0, y: 0 };
@@ -59,6 +61,12 @@ export class Renderer {
     this._holeDistM = holeDistM;
     this._ballPx = { x: W / 2, y: H - 10 - PAD_M * scale };
     this._holePx = { x: W / 2, y: this._ballPx.y - holeDistM * scale };
+
+    // Physical sizes — scale with px/m, clamped so they stay visible at all distances
+    // Hole diameter = 4.25" = 0.108 m  →  radius 0.054 m
+    // Ball diameter = 1.68" = 0.0427 m →  radius 0.0213 m
+    this._holeRPx = Math.max(6,  Math.min(18, 0.054  * scale));
+    this._ballRPx = Math.max(3.5, Math.min(11, 0.0213 * scale));
   }
 
   _toCanvas(sx, sy) {
@@ -96,8 +104,11 @@ export class Renderer {
 
   _drawHole(cx, cy) {
     const { ctx } = this;
+    const r  = this._holeRPx;
+    const fH = r * 4.5;   // flagstick height proportional to hole size
+    const fW = r * 2.5;   // flag triangle width
     ctx.beginPath();
-    ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = '#111';
     ctx.fill();
     ctx.strokeStyle = '#666';
@@ -106,19 +117,20 @@ export class Renderer {
     // Flagstick
     ctx.save();
     ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - 24); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - fH); ctx.stroke();
     ctx.fillStyle = '#e63946';
     ctx.beginPath();
-    ctx.moveTo(cx, cy - 24); ctx.lineTo(cx + 14, cy - 18); ctx.lineTo(cx, cy - 12);
+    ctx.moveTo(cx, cy - fH); ctx.lineTo(cx + fW, cy - fH * 0.75); ctx.lineTo(cx, cy - fH * 0.5);
     ctx.closePath(); ctx.fill();
     ctx.restore();
   }
 
   _drawBall(cx, cy, glowing = false) {
     const { ctx } = this;
+    const r = this._ballRPx;
     ctx.save();
     if (glowing) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 12; }
-    ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = '#fff'; ctx.fill();
     ctx.shadowBlur = 0;
     ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.stroke();
