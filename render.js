@@ -67,14 +67,15 @@ export class Renderer {
     this._holePx = { x: W / 2, y: this._ballPx.y - holeDistM * scale };
 
     // Visually realistic proportions:
-    //   - Hole radius scales gently with distance (close = bigger, far = smaller)
+    //   - Hole radius scales gently with distance — flatter curve so long putts
+    //     still look proportional (exponent 0.20 = barely shrinks at distance)
     //   - Ball is always exactly 39.5% of hole radius (real ratio: 1.68"/4.25")
-    //   - Anchored to canvas height so it feels right on any screen
+    //   - Anchored to canvas height so it feels right on any screen size
     const distFt    = holeDistM / 0.3048;
-    const baseRPx   = H * 0.032;                           // ~12px on 380px canvas
-    const damped    = Math.pow(10 / Math.max(distFt, 3), 0.30); // gentle curve
-    this._holeRPx   = Math.max(7, Math.min(22, baseRPx * damped));
-    this._ballRPx   = this._holeRPx * (1.68 / 4.25);       // always 39.5% of hole
+    const baseRPx   = H * 0.036;                              // ~14px on 380px canvas
+    const damped    = Math.pow(10 / Math.max(distFt, 3), 0.20); // very flat curve
+    this._holeRPx   = Math.max(10, Math.min(22, baseRPx * damped));
+    this._ballRPx   = this._holeRPx * (1.68 / 4.25);          // always 39.5% of hole
   }
 
   _toCanvas(sx, sy) {
