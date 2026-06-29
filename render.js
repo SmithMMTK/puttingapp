@@ -19,6 +19,10 @@ export class Renderer {
     window.addEventListener('resize', () => this._resize());
   }
 
+  static BALL_RADIUS_M = 0.0213; // 1.68 in diameter
+  static HOLE_RADIUS_M = 0.054;  // 4.25 in diameter
+  static HOLE_TO_BALL_RADIUS_RATIO = Renderer.HOLE_RADIUS_M / Renderer.BALL_RADIUS_M;
+
   _resize() {
     const el = this.canvas.parentElement;
     const W  = el.clientWidth;
@@ -62,11 +66,17 @@ export class Renderer {
     this._ballPx = { x: W / 2, y: H - 10 - PAD_M * scale };
     this._holePx = { x: W / 2, y: this._ballPx.y - holeDistM * scale };
 
-    // Physical sizes — scale with px/m, clamped so they stay visible at all distances
-    // Hole diameter = 4.25" = 0.108 m  →  radius 0.054 m
-    // Ball diameter = 1.68" = 0.0427 m →  radius 0.0213 m
-    this._holeRPx = Math.max(6,  Math.min(18, 0.054  * scale));
-    this._ballRPx = Math.max(3.5, Math.min(11, 0.0213 * scale));
+    // Physical sizes — keep true golf ratio (hole diameter ≈ 2.53x ball diameter)
+    // while still clamping for readability at very short/long putts.
+    const rawBallRPx = Renderer.BALL_RADIUS_M * scale;
+    const rawHoleRPx = Renderer.HOLE_RADIUS_M * scale;
+    const maxBallRPx = Math.min(14, H * 0.03);
+    this._ballRPx = Math.max(3.2, Math.min(maxBallRPx, rawBallRPx));
+
+    // Ensure hole does not appear undersized relative to the rendered ball.
+    const ratioHoleRPx = this._ballRPx * Renderer.HOLE_TO_BALL_RADIUS_RATIO;
+    const maxHoleRPx = Math.min(36, H * 0.08);
+    this._holeRPx = Math.max(7.5, Math.min(maxHoleRPx, Math.max(rawHoleRPx, ratioHoleRPx)));
   }
 
   _toCanvas(sx, sy) {
@@ -105,8 +115,8 @@ export class Renderer {
   _drawHole(cx, cy) {
     const { ctx } = this;
     const r  = this._holeRPx;
-    const fH = r * 4.5;   // flagstick height proportional to hole size
-    const fW = r * 2.5;   // flag triangle width
+    const fH = Math.max(18, Math.min(44, r * 1.8));
+    const fW = Math.max(8, Math.min(18, r * 0.95));
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = '#111';
@@ -139,12 +149,14 @@ export class Renderer {
 
   _drawAimpointDot(cx, cy, color = '#ffd700', label = null) {
     const { ctx } = this;
+    const glowR = Math.max(4, Math.min(7, this._ballRPx * 0.66));
+    const dotR  = Math.max(2.6, Math.min(4.2, this._ballRPx * 0.4));
     ctx.save();
     // Glow ring
-    ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fillStyle = `${color}28`; ctx.fill();
     // Solid dot
-    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
     ctx.fillStyle = color; ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
     if (label) {
