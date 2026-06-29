@@ -19,7 +19,6 @@ export function initUI() {
   const pastSlider  = document.getElementById('past-feet');
   const pastVal     = document.getElementById('past-val');
   const btnLeft     = document.getElementById('btn-left');
-  const btnStraight = document.getElementById('btn-straight');
   const btnRight    = document.getElementById('btn-right');
   const puttBtn     = document.getElementById('btn-putt');
   const retryBtn    = document.getElementById('btn-retry');
@@ -37,8 +36,8 @@ export function initUI() {
   const state = {
     distanceFt:  12,
     stimp:        9,
-    breakMag:     2,    // 0–7 %
-    breakDir:     1,    // +1=right, -1=left, 0=straight
+    breakMag:     2,    // 1–4 %
+    breakDir:     1,    // +1=right, -1=left
     pastFeet:     1.5,  // how far past hole ball would roll on flat miss (1–5 ft)
     aimOffsetM:   0,    // user's lateral aim offset (metres at hole level; −=left)
     phase:       'SETUP', // SETUP | ROLLING | RESULT
@@ -128,24 +127,16 @@ export function initUI() {
 
   // ── Break direction buttons ────────────────────────────────────────────
   function syncBreakBtns() {
-    btnLeft.classList.toggle('active',     state.breakDir === -1);
-    btnStraight.classList.toggle('active', state.breakDir ===  0);
-    btnRight.classList.toggle('active',    state.breakDir ===  1);
+    btnLeft.classList.toggle('active',  state.breakDir === -1);
+    btnRight.classList.toggle('active', state.breakDir ===  1);
   }
 
   btnLeft.addEventListener('click', () => {
     state.breakDir = -1;
-    if (state.breakMag === 0) { state.breakMag = 1; breakSlider.value = 1; breakVal.textContent = '1.0%'; }
-    syncBreakBtns(); redrawSetup();
-  });
-  btnStraight.addEventListener('click', () => {
-    state.breakDir = 0; state.breakMag = 0;
-    breakSlider.value = 0; breakVal.textContent = '0%';
     syncBreakBtns(); redrawSetup();
   });
   btnRight.addEventListener('click', () => {
     state.breakDir = 1;
-    if (state.breakMag === 0) { state.breakMag = 1; breakSlider.value = 1; breakVal.textContent = '1.0%'; }
     syncBreakBtns(); redrawSetup();
   });
 
@@ -166,7 +157,6 @@ export function initUI() {
   breakSlider.addEventListener('input', () => {
     state.breakMag = parseFloat(breakSlider.value);
     breakVal.textContent = state.breakMag.toFixed(1) + '%';
-    if (state.breakMag === 0) { state.breakDir = 0; syncBreakBtns(); }
     if (state.phase === 'SETUP') redrawSetup();
   });
 
@@ -272,14 +262,10 @@ export function initUI() {
     state.distanceFt = Math.floor(Math.random() * 30) + 1;
     // Stimp: 8–12 in 0.5 steps
     state.stimp = 8 + Math.round(Math.random() * 8) * 0.5;
-    // Slope: 0–7% in 0.5 steps
-    state.breakMag = Math.round(Math.random() * 14) * 0.5;
-    // Break direction (if slope > 0: random left/right; else straight)
-    if (state.breakMag === 0) {
-      state.breakDir = 0;
-    } else {
-      state.breakDir = Math.random() < 0.5 ? -1 : 1;
-    }
+    // Slope: 1–4% in 0.5 steps
+    state.breakMag = 1 + Math.round(Math.random() * 6) * 0.5;
+    // Break direction: random left/right
+    state.breakDir = Math.random() < 0.5 ? -1 : 1;
     // Firmness: 1–3 ft in 0.5 steps
     state.pastFeet = 1 + Math.round(Math.random() * 4) * 0.5;
     // Reset aim to straight — let user discover the break
@@ -334,7 +320,7 @@ export function initUI() {
 
     // Sliders/break buttons: disabled when not in setup, or always locked in game mode
     const lockControls = !isSetup || isGame;
-    [distSlider, stimpSlider, breakSlider, pastSlider, btnLeft, btnStraight, btnRight]
+    [distSlider, stimpSlider, breakSlider, pastSlider, btnLeft, btnRight]
       .forEach(el => { el.disabled = lockControls; });
   }
 
