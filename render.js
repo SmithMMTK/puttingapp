@@ -66,17 +66,15 @@ export class Renderer {
     this._ballPx = { x: W / 2, y: H - 10 - PAD_M * scale };
     this._holePx = { x: W / 2, y: this._ballPx.y - holeDistM * scale };
 
-    // Physical sizes — keep true golf ratio (hole diameter ≈ 2.53x ball diameter)
-    // while still clamping for readability at very short/long putts.
-    const rawBallRPx = Renderer.BALL_RADIUS_M * scale;
-    const rawHoleRPx = Renderer.HOLE_RADIUS_M * scale;
-    const maxBallRPx = Math.min(14, H * 0.03);
-    this._ballRPx = Math.max(3.2, Math.min(maxBallRPx, rawBallRPx));
-
-    // Ensure hole does not appear undersized relative to the rendered ball.
-    const ratioHoleRPx = this._ballRPx * Renderer.HOLE_TO_BALL_RADIUS_RATIO;
-    const maxHoleRPx = Math.min(36, H * 0.08);
-    this._holeRPx = Math.max(7.5, Math.min(maxHoleRPx, Math.max(rawHoleRPx, ratioHoleRPx)));
+    // Visually realistic proportions:
+    //   - Hole radius scales gently with distance (close = bigger, far = smaller)
+    //   - Ball is always exactly 39.5% of hole radius (real ratio: 1.68"/4.25")
+    //   - Anchored to canvas height so it feels right on any screen
+    const distFt    = holeDistM / 0.3048;
+    const baseRPx   = H * 0.032;                           // ~12px on 380px canvas
+    const damped    = Math.pow(10 / Math.max(distFt, 3), 0.30); // gentle curve
+    this._holeRPx   = Math.max(7, Math.min(22, baseRPx * damped));
+    this._ballRPx   = this._holeRPx * (1.68 / 4.25);       // always 39.5% of hole
   }
 
   _toCanvas(sx, sy) {
