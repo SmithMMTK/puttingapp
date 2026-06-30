@@ -194,7 +194,7 @@ export function initUI() {
   });
 
   modeGameBtn.addEventListener('click', () => {
-    if (state.mode === 'game') return;
+    // Clicking "Game" always starts a fresh game with new random scenarios
     state.mode = 'game';
     modePracticeBtn.classList.remove('active');
     modeGameBtn.classList.add('active');
