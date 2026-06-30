@@ -1,11 +1,56 @@
 /**
  * ui.js — State machine + interactions
- * States: SETUP → ROLLING → RESULT → SETUP  (or GAMEOVER after all 100 scenarios)
+ * States: SETUP → ROLLING → RESULT → SETUP  (or GAMEOVER after all 20 scenarios)
  */
 
 import { stimpToMu, standardV0, simulate, solveCorrectAim } from './physics.js';
 import { Renderer } from './render.js';
 import { SCENARIOS } from './scenarios.js';
+
+// ── Scenario sampling constants ────────────────────────────────────────────
+const TIER_SIZE    = 20;   // scenarios per tier in SCENARIOS array
+const NUM_TIERS    = 5;
+const SAMPLES      = 4;    // randomly picked per tier each game
+const TOTAL        = NUM_TIERS * SAMPLES;  // 20
+const SESSION_KEY  = 'puttingApp_session';
+
+/** Pick SAMPLES random indices from each tier, in tier order. */
+function sampleScenarios() {
+  const list = [];
+  for (let t = 0; t < NUM_TIERS; t++) {
+    const base = t * TIER_SIZE;
+    const pool = Array.from({ length: TIER_SIZE }, (_, i) => base + i);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    list.push(...pool.slice(0, SAMPLES));
+  }
+  return list;
+}
+
+/** Persist game progress so browser refresh can resume. */
+function saveSession(scenarioList, scenarioIdx, score) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      v: 1, scenarioList, scenarioIdx, score,
+    }));
+  } catch (_) {}
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (d.v !== 1 || !Array.isArray(d.scenarioList) || d.scenarioList.length !== TOTAL) return null;
+    return d;
+  } catch (_) { return null; }
+}
 
 export function initUI() {
   const canvas     = document.getElementById('green-canvas');
@@ -48,12 +93,12 @@ export function initUI() {
     mode:        'practice', // 'practice' | 'game'
   };
 
-  // gameState tracks progress through the 100 fixed scenarios
+  // gameState tracks progress through the 20 sampled scenarios
   const gameState = {
-    scenarioIdx: 0,   // 0-based index into SCENARIOS
-    score:       0,   // points earned
+    scenarioList: [],  // 20 indices into SCENARIOS, sampled at game start
+    scenarioIdx:  0,   // 0-based position within scenarioList
+    score:        0,   // points earned
   };
-  const TOTAL = SCENARIOS.length; // 100
 
   let tracking = false;
   let lastResult = null;
@@ -88,12 +133,11 @@ export function initUI() {
 
   // ── Game helpers ──────────────────────────────────────────────────────
   function gameRating(score) {
-    const pct = score / TOTAL;
-    if (pct === 1)   return 'Perfect round! 🏆';
-    if (pct >= 0.8)  return 'Excellent! 🌟';
-    if (pct >= 0.6)  return 'Great game 👍';
-    if (pct >= 0.4)  return 'Not bad 🤔';
-    if (pct >= 0.2)  return 'Keep practicing 💪';
+    if (score === TOTAL)       return 'Perfect round! 🏆';
+    if (score >= TOTAL * 0.8)  return 'Excellent! 🌟';
+    if (score >= TOTAL * 0.6)  return 'Great game 👍';
+    if (score >= TOTAL * 0.4)  return 'Not bad 🤔';
+    if (score >= TOTAL * 0.2)  return 'Keep practicing 💪';
     return 'Try again! 😅';
   }
 
@@ -101,9 +145,9 @@ export function initUI() {
     gamePts.textContent = gameState.score;
   }
 
-  // Load a fixed scenario by 0-based index into state + DOM controls
+  // Load a scenario by 0-based position within gameState.scenarioList
   function loadScenario(idx) {
-    const s = SCENARIOS[idx];
+    const s = SCENARIOS[gameState.scenarioList[idx]];
     state.distanceFt = s.distanceFt;
     state.stimp      = s.stimp;
     state.breakMag   = s.breakMag;
@@ -123,8 +167,9 @@ export function initUI() {
   }
 
   function startGame() {
-    gameState.scenarioIdx = 0;
-    gameState.score       = 0;
+    gameState.scenarioList = sampleScenarios();
+    gameState.scenarioIdx  = 0;
+    gameState.score        = 0;
     state.phase = 'SETUP';
     renderer.stopAnimation();
     lastResult = null;
@@ -132,6 +177,7 @@ export function initUI() {
     updateScoreBadge();
     setPhaseUI();
     redrawSetup();
+    saveSession(gameState.scenarioList, 0, 0);
   }
 
   // ── Mode toggle ────────────────────────────────────────────────────────
@@ -281,7 +327,7 @@ export function initUI() {
   // ── NEXT PUTT / PLAY AGAIN button (game mode) ─────────────────────────
   nextBtn.addEventListener('click', () => {
     if (state.phase === 'GAMEOVER') {
-      // Play Again — restart from scenario 1
+      // Play Again — new sample, restart
       startGame();
       return;
     }
@@ -292,6 +338,7 @@ export function initUI() {
       gameOverScore.textContent  = `${gameState.score} / ${TOTAL}`;
       gameOverRating.textContent = gameRating(gameState.score);
       setPhaseUI();
+      clearSession();
     } else {
       gameState.scenarioIdx++;
       state.phase = 'SETUP';
@@ -300,6 +347,7 @@ export function initUI() {
       loadScenario(gameState.scenarioIdx);
       setPhaseUI();
       redrawSetup();
+      saveSession(gameState.scenarioList, gameState.scenarioIdx, gameState.score);
     }
   });
 
@@ -390,7 +438,24 @@ export function initUI() {
   stimpVal.textContent = state.stimp.toFixed(1);
   breakVal.textContent = state.breakMag.toFixed(1) + '%';
   pastVal.textContent  = state.pastFeet.toFixed(1) + ' ft';
-  syncBreakBtns();
-  setPhaseUI();
-  redrawSetup();
+
+  // Try to resume a saved game session
+  const savedSession = loadSession();
+  if (savedSession) {
+    state.mode = 'game';
+    modePracticeBtn.classList.remove('active');
+    modeGameBtn.classList.add('active');
+    gameState.scenarioList = savedSession.scenarioList;
+    gameState.scenarioIdx  = savedSession.scenarioIdx;
+    gameState.score        = savedSession.score;
+    loadScenario(gameState.scenarioIdx);
+    state.phase = 'SETUP';
+    updateScoreBadge();
+    setPhaseUI();
+    redrawSetup();
+  } else {
+    syncBreakBtns();
+    setPhaseUI();
+    redrawSetup();
+  }
 }
