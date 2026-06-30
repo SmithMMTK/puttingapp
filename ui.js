@@ -14,6 +14,15 @@ const SAMPLES      = 4;    // randomly picked per tier each game
 const TOTAL        = NUM_TIERS * SAMPLES;  // 20
 const SESSION_KEY  = 'puttingApp_session';
 
+// Progressive points per tier (4 holes × each = 4+8+16+28+44 = 100 max)
+const TIER_POINTS = [1, 2, 4, 7, 11];
+const MAX_SCORE   = TIER_POINTS.reduce((s, p) => s + p * SAMPLES, 0); // 100
+
+/** Points awarded for hole at given 0-based scenarioIdx. */
+function holePoints(idx) {
+  return TIER_POINTS[Math.floor(idx / SAMPLES)];
+}
+
 /** Pick SAMPLES random indices from each tier, in tier order. */
 function sampleScenarios() {
   const list = [];
@@ -133,16 +142,18 @@ export function initUI() {
 
   // ── Game helpers ──────────────────────────────────────────────────────
   function gameRating(score) {
-    if (score === TOTAL)       return 'Perfect round! 🏆';
-    if (score >= TOTAL * 0.8)  return 'Excellent! 🌟';
-    if (score >= TOTAL * 0.6)  return 'Great game 👍';
-    if (score >= TOTAL * 0.4)  return 'Not bad 🤔';
-    if (score >= TOTAL * 0.2)  return 'Keep practicing 💪';
+    if (score === MAX_SCORE)            return 'Perfect round! 🏆';
+    if (score >= MAX_SCORE * 0.8)       return 'Excellent! 🌟';
+    if (score >= MAX_SCORE * 0.6)       return 'Great game 👍';
+    if (score >= MAX_SCORE * 0.4)       return 'Not bad 🤔';
+    if (score >= MAX_SCORE * 0.2)       return 'Keep practicing 💪';
     return 'Try again! 😅';
   }
 
   function updateScoreBadge() {
-    gamePts.textContent = gameState.score;
+    const hole = gameState.scenarioIdx + 1;
+    const pts  = holePoints(gameState.scenarioIdx);
+    gamePts.textContent = `${gameState.score}/${MAX_SCORE} · Hole ${hole}/20 · worth ${pts}pt`;
   }
 
   // Load a scenario by 0-based position within gameState.scenarioList
@@ -301,7 +312,7 @@ export function initUI() {
     renderer.animate(result.path, holeDistM(), result.holed, result.stopDist, () => {
       state.phase = 'RESULT';
       if (state.mode === 'game' && result.holed) {
-        gameState.score++;
+        gameState.score += holePoints(gameState.scenarioIdx);
         updateScoreBadge();
       }
       setPhaseUI();
@@ -335,7 +346,7 @@ export function initUI() {
     if (isLastPutt) {
       // Show game-over screen
       state.phase = 'GAMEOVER';
-      gameOverScore.textContent  = `${gameState.score} / ${TOTAL}`;
+      gameOverScore.textContent  = `${gameState.score} / ${MAX_SCORE} pts`;
       gameOverRating.textContent = gameRating(gameState.score);
       setPhaseUI();
       clearSession();
